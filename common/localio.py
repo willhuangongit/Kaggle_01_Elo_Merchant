@@ -7,6 +7,7 @@
 import csv
 import pandas
 import random
+import itertools
 
 
 # Functions
@@ -27,7 +28,7 @@ class CSVReader:
 
     def __init__(self, file_dir = '', header = True, newline = '',
         delimiter = ',', quotechar = '|', as_df = True, sample_size = None,
-        seed = None, **kwargs):
+        seed = None, datetime_cols = None, **kwargs):
 
         # Optional properties
         self._file_dir = file_dir    # Dataset location; includes file name and extension.
@@ -45,7 +46,8 @@ class CSVReader:
 
         # Load the dataset
         random.seed(self._seed)
-        self.load(as_df = self._as_df, sample_size = self._sample_size, **kwargs)
+        self.load(as_df = self._as_df, sample_size = self._sample_size,
+            datetime_cols = datetime_cols, **kwargs)
 
     # Properties
 
@@ -126,7 +128,7 @@ class CSVReader:
         with open(self._file_dir, newline = self._newline) as csv_file:
             self._n = sum(1 for line in csv.reader(csv_file, delimiter = self._delimiter)) - offset
 
-    def load(self, as_df = True, sample_size = None, **kwargs):
+    def load(self, as_df = True, sample_size = None, datetime_cols = None, **kwargs):
 
         # Load the dataset at the self.__file_dir.
         # 'sample' allows for drawing a random sample
@@ -178,3 +180,8 @@ class CSVReader:
                         elif each[0] > keep_max:
                             break    # No need to proceed further
                     self._data = output
+
+        # Convert columns to datetime as specified
+        if datetime_cols != None:
+            for col in datetime_cols:
+                self._data[col] = pandas.to_datetime(self._data[col])

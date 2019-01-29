@@ -130,3 +130,70 @@ def plot_top_pie(df, col_name, top = 5, rel_freq = True, fontsize = 20, figsize 
     plt.axis('off')
     plt.title(col_name + title_suffix, fontsize = fontsize)
     plt.show()
+
+def describe_timedelta(datetime_series):
+
+    # Given a pandas Series of Timedelta objects, 
+    # describe the series in terms of days.
+    
+    desc = datetime_series.describe()
+    
+    for each in desc.index:
+        if isinstance(desc[each], pd.Timedelta):
+            desc[each] = desc[each].days
+
+    return desc
+
+def get_set_pair_counts(sets, as_percentage = False, ndigits = 2):
+
+    # Given a collection of sets, return a pandas DataFrame containing 
+    # the number of elements in the intersection, differences and union 
+    # between all possible pairs of these sets.
+
+    # sets: a dictionary, list or tuple of sets. In the case of list or tuple,
+    # the index of the set will be used to identify the sets rather than 
+    # dictionary keys.
+    # as_percentage: if true, return the results as percentage of A union B.
+    # ndigits: the number of decimals that the final result will be rounded to.
+
+    if isinstance(sets, list) or isinstance(sets, tuple):
+        sets = {f'{each[0]}': each[1] for each in enumerate(sets)}
+
+    if isinstance(sets, dict):
+        cols = ['A', 'B', 'In A but not in B',  'In B but not in A', 'A and B', 'A or B']
+
+        data = []
+
+        # Iterate through all possible combinations.
+        for each in itertools.combinations(sets, 2):
+
+            row = [len(sets[each[0]].difference(sets[each[1]])),
+                   len(sets[each[1]].difference(sets[each[0]])),
+                   len(sets[each[0]].intersection(sets[each[1]])),
+                   len(sets[each[0]].union(sets[each[1]]))]
+
+            if as_percentage:
+                denom = row[-1]
+                if denom == 0:
+                    row = [np.nan] * len(row)
+                else:
+                    row = [(num / denom) * 100 for num in row]
+
+            if isinstance(ndigits, int):
+                row = [round(num, ndigits) for num in row]
+
+            # Attach set names
+            row = [each[0], each[1]] + row
+
+            # Append data row
+            data.append(row)
+
+        counts = pandas.DataFrame(
+            columns = cols,
+            data = data
+        )
+
+    else:
+        raise_custom_error(TypeError, 'sets must be either a dictionary, list or tuple.')
+    
+    return counts
